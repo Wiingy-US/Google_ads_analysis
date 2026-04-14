@@ -1,13 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { analyseData } from "@/lib/analysis";
+import { sendDigestEmail } from "@/lib/email";
 import { generateInsights } from "@/lib/gemini";
 import { fetchAllAdsData } from "@/lib/google-ads";
 
 async function runFullAnalysis() {
   const adsData = await fetchAllAdsData();
   const analysisResult = await analyseData(adsData);
-  return generateInsights(analysisResult);
+  const report = await generateInsights(analysisResult);
+
+  try {
+    await sendDigestEmail(report);
+  } catch (err) {
+    console.error("sendDigestEmail failed:", err);
+  }
+
+  return report;
 }
 
 function errorResponse(error: unknown) {
