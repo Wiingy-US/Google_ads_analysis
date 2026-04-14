@@ -1,5 +1,44 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-export async function POST() {
-  return NextResponse.json({ status: "ok" });
+import { analyseData } from "@/lib/analysis";
+import { generateInsights } from "@/lib/gemini";
+import { fetchAllAdsData } from "@/lib/google-ads";
+
+async function runFullAnalysis() {
+  const adsData = await fetchAllAdsData();
+  const analysisResult = await analyseData(adsData);
+  return generateInsights(analysisResult);
+}
+
+function errorResponse(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return NextResponse.json({ error: message }, { status: 500 });
+}
+
+function isAuthorized(request: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  return request.headers.get("authorization") === `Bearer ${secret}`;
+}
+
+export async function POST(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const report = await runFullAnalysis();
+    return NextResponse.json(report);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function GET() {
+  try {
+    const report = await runFullAnalysis();
+    return NextResponse.json(report);
+  } catch (error) {
+    return errorResponse(error);
+  }
 }

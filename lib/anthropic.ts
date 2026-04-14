@@ -1,1 +1,0 @@
-export const generateInsights = async () => [];
