@@ -10,7 +10,6 @@ export async function GET() {
     env: {
       googleAds: !!process.env.GOOGLE_ADS_CLIENT_ID,
       gemini: !!process.env.GEMINI_API_KEY,
-      resend: !!process.env.RESEND_API_KEY,
     },
   });
 }
